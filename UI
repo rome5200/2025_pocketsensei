@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포켓쌤 - 나만의 학습 파트너</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .app-container {
+            max-width: 414px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .gradient-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .character-container {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .character {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
+            position: relative;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .stat-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .stat-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .timer-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: conic-gradient(#667eea 0deg, #e0e0e0 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin: 0 auto;
+        }
+        
+        .timer-inner {
+            width: 160px;
+            height: 160px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .menu-panel {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100vh;
+            background: white;
+            transition: right 0.3s ease;
+            z-index: 1001;
+            overflow-y: auto;
+        }
+        
+        .menu-panel.open {
+            right: 0;
+        }
+        
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        .subject-color-1 { background: #ff6b6b; }
+        .subject-color-2 { background: #4ecdc4; }
+        .subject-color-3 { background: #45b7d1; }
+        .subject-color-4 { background: #96ceb4; }
+        .subject-color-5 { background: #feca57; }
+        .subject-color-6 { background: #ff9ff3; }
+        
+        .timetable-cell {
+            min-height: 60px;
+            border: 1px solid #e0e0e0;
+            position: relative;
+        }
+        
+        .chat-bubble {
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 414px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Menu Overlay -->
+        <div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
+        
+        <!-- Menu Panel -->
+        <div class="menu-panel" id="menuPanel">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold">설정</h2>
+                    <button onclick="closeMenu()" class="text-2xl">×</button>
+                </div>
+                
+                <!-- Language Setting -->
+                <div class="mb-6">
+                    <h3 class="font-semibold mb-3" id="settingLanguage">언어 설정</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="language" value="ko" checked class="mr-2" onchange="changeLanguage('ko')">
+                            <span>🇰🇷 한국어</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="language" value="ja" class="mr-2" onchange="changeLanguage('ja')">
+                            <span>🇯🇵 日本語</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- School Information -->
+                <div class="mb-6">
+                    <h3 class="font-semibold mb-3" id="settingSchool">학교 정보</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium mb-1" id="schoolTypeLabel">학교 구분</label>
+                            <select id="schoolType" class="w-full p-2 border rounded-lg">
+                                <option value="middle">중학교</option>
+                                <option value="high">고등학교</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1" id="gradeLabel">학년</label>
+                            <select id="grade" class="w-full p-2 border rounded-lg">
+                                <option value="1">1학년</option>
+                                <option value="2">2학년</option>
+                                <option value="3">3학년</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Exam Type -->
+                <div class="mb-6">
+                    <h3 class="font-semibold mb-3">준비 시험</h3>
+                    <select class="w-full p-2 border rounded-lg">
+                        <option>수능</option>
+                        <option>토익</option>
+                        <option>토플</option>
+                        <option>JLPT</option>
+                        <option>기타</option>
+                    </select>
+                </div>
+                
+                <!-- Goal Setting -->
+                <div class="mb-6">
+                    <h3 class="font-semibold mb-3">목표 설정</h3>
+                    <textarea class="w-full p-2 border rounded-lg h-20" placeholder="나의 학습 목표를 입력하세요...">서울대학교 컴퓨터공학과 합격</textarea>
+                </div>
+                
+                <!-- Academic Performance -->
+                <div class="mb-6">
+                    <h3 class="font-semibold mb-3">현재 성적</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span>국어</span>
+                            <select class="border rounded px-2">
+                                <option>1등급</option>
+                                <option>2등급</option>
+                                <option>3등급</option>
+                                <option>4등급</option>
+                                <option>5등급</option>
+                            </select>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>수학</span>
+                            <select class="border rounded px-2">
+                                <option>1등급</option>
+                                <option>2등급</option>
+                                <option selected>3등급</option>
+                                <option>4등급</option>
+                                <option>5등급</option>
+                            </select>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>영어</span>
+                            <select class="border rounded px-2">
+                                <option>1등급</option>
+                                <option selected>2등급</option>
+                                <option>3등급</option>
+                                <option>4등급</option>
+                                <option>5등급</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Page -->
+        <div class="page active" id="mainPage">
+            <!-- Header -->
+            <div class="gradient-header text-white p-4">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-2xl font-bold">포켓쌤</h1>
+                    <button onclick="openMenu()" class="text-2xl">☰</button>
+                </div>
+            </div>
+
+            <!-- Goal & Streak -->
+            <div class="p-4 bg-white">
+                <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-semibold text-gray-800">나의 목표</h3>
+                            <p class="text-sm text-gray-600">서울대학교 컴퓨터공학과 합격</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-600">15일</div>
+                            <div class="text-xs text-gray-500">연속 학습 🔥</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Character Partner -->
+                <div class="character-container p-6 mb-4">
+                    <div class="text-center mb-4">
+                        <h3 class="font-semibold text-white mb-2">내 파트너</h3>
+                        <button onclick="showPage('partnerPage')" class="character">
+                            <div class="text-6xl">🥚</div>
+                        </button>
+                        <p class="text-white text-sm mt-2">알 단계 (Lv.1)</p>
+                    </div>
+                    
+                    <!-- Stats Toggle Button -->
+                    <div class="text-center">
+                        <button onclick="toggleStats()" id="statsToggle" class="text-white text-sm bg-white bg-opacity-20 px-4 py-2 rounded-full">
+                            스텟 보기 ▼
+                        </button>
+                    </div>
+                    
+                    <!-- Stats (Hidden by default) -->
+                    <div id="partnerStats" class="space-y-3 mt-4" style="display: none;">
+                        <div>
+                            <div class="flex justify-between text-white text-sm mb-1">
+                                <span id="statConcentration">집중력</span>
+                                <span>65/100</span>
+                            </div>
+                            <div class="stat-bar">
+                                <div class="stat-fill bg-red-400" style="width: 65%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-white text-sm mb-1">
+                                <span id="statMemory">기억력</span>
+                                <span>78/100</span>
+                            </div>
+                            <div class="stat-bar">
+                                <div class="stat-fill bg-blue-400" style="width: 78%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-white text-sm mb-1">
+                                <span id="statProblemSolving">문제해결력</span>
+                                <span>52/100</span>
+                            </div>
+                            <div class="stat-bar">
+                                <div class="stat-fill bg-green-400" style="width: 52%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Today's Goals -->
+                <div class="bg-white rounded-xl border p-4 mb-4">
+                    <h3 class="font-semibold mb-3">오늘의 목표</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-3 rounded">
+                            <span class="text-sm">수학 문제집 2단원 완료</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" checked class="mr-3 rounded">
+                            <span class="text-sm line-through text-gray-500">영어 단어 50개 암기</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="mr-3 rounded">
+                            <span class="text-sm">국어 독서 지문 3개 풀기</span>
+                        </label>
+                    </div>
+                    <button class="w-full mt-3 bg-blue-500 text-white py-2 rounded-lg text-sm">+ 목표 추가</button>
+                </div>
+
+                <!-- Study Time Tracker -->
+                <div class="bg-white rounded-xl border p-4 mb-20">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold">오늘 공부 시간</h3>
+                        <span class="text-lg font-bold text-blue-600">3시간 25분</span>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 subject-color-1 rounded mr-3"></div>
+                                <span class="text-sm font-medium">수학</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-gray-600">1시간 20분</span>
+                                <button onclick="startTimer('수학')" class="bg-blue-500 text-white px-3 py-1 rounded text-xs">시작</button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 subject-color-2 rounded mr-3"></div>
+                                <span class="text-sm font-medium">영어</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-gray-600">1시간 15분</span>
+                                <button onclick="startTimer('영어')" class="bg-blue-500 text-white px-3 py-1 rounded text-xs">시작</button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 subject-color-3 rounded mr-3"></div>
+                                <span class="text-sm font-medium">국어</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-gray-600">50분</span>
+                                <button onclick="startTimer('국어')" class="bg-blue-500 text-white px-3 py-1 rounded text-xs">시작</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Partner Page -->
+        <div class="page" id="partnerPage">
+            <div class="gradient-header text-white p-4">
+                <div class="flex items-center">
+                    <button onclick="showPage('mainPage')" class="mr-3 text-xl">←</button>
+                    <h1 class="text-xl font-bold">내 파트너</h1>
+                </div>
+            </div>
+            
+            <div class="p-4">
+                <div class="character-container p-8 text-center mb-6">
+                    <div class="character mb-4">
+                        <div class="text-8xl">🥚</div>
+                    </div>
+                    <h2 class="text-white text-xl font-bold mb-2">알 단계</h2>
+                    <p class="text-white text-sm">레벨 1 • 경험치 45/100</p>
+                    <div class="w-full bg-white bg-opacity-30 rounded-full h-2 mt-2">
+                        <div class="bg-white h-2 rounded-full" style="width: 45%"></div>
+                    </div>
+                </div>
+                
+                <!-- Evolution Preview -->
+                <div class="bg-white rounded-xl p-4 mb-4">
+                    <h3 class="font-semibold mb-3">진화 단계</h3>
+                    <div class="grid grid-cols-4 gap-4 text-center">
+                        <div class="p-2">
+                            <div class="text-2xl mb-1">🥚</div>
+                            <div class="text-xs text-blue-600 font-semibold">현재</div>
+                        </div>
+                        <div class="p-2 opacity-50">
+                            <div class="text-2xl mb-1">🐣</div>
+                            <div class="text-xs">Lv.5</div>
+                        </div>
+                        <div class="p-2 opacity-50">
+                            <div class="text-2xl mb-1">🐥</div>
+                            <div class="text-xs">Lv.15</div>
+                        </div>
+                        <div class="p-2 opacity-50">
+                            <div class="text-2xl mb-1">🦅</div>
+                            <div class="text-xs">Lv.30</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Detailed Stats -->
+                <div class="bg-white rounded-xl p-4">
+                    <h3 class="font-semibold mb-4">상세 능력치</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm font-medium">집중력 (Concentration)</span>
+                                <span class="text-sm text-gray-600">65/100</span>
+                            </div>
+                            <div class="stat-bar">
+                                <div class="stat-fill bg-red-400" style="width: 65%"></div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">타이머 연속 사용으로 향상 • 기본 속도 증가</p>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm font-medium">기억력 (Memory)</span>
+                                <span class="text-sm text-gray-600">78/100</span>
+                            </div>
+                            <div class="stat-bar">
+                                <div class="stat-fill bg-blue-400" style="width: 78%"></div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">복습 퀴즈 정답률로 향상 • 아이템 효과 지속시간 증가</p>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm font-medium">문제해결력 (Problem Solving)</span>
+                                <span class="text-sm text-gray-600">52/100</span>
+                            </div>
+                            <div class="stat-bar">
+                                <div class="stat-fill bg-green-400" style="width: 52%"></div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">AI 튜터 문제 풀이로 향상 • 장애물 회피 확률 증가</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timer Page -->
+        <div class="page" id="timerPage">
+            <div class="gradient-header text-white p-4">
+                <div class="flex items-center">
+                    <button onclick="showPage('mainPage')" class="mr-3 text-xl">←</button>
+                    <h1 class="text-xl font-bold" id="timerPageTitle">공부 타이머</h1>
+                </div>
+            </div>
+            
+            <div class="p-4">
+                <!-- Timer Mode Selection -->
+                <div class="flex mb-6 bg-gray-100 rounded-xl p-1">
+                    <button onclick="switchTimerMode('pomodoro')" id="pomodoroBtn" class="flex-1 py-2 px-4 rounded-lg bg-blue-500 text-white font-semibold">
+                        뽀모도로
+                    </button>
+                    <button onclick="switchTimerMode('stopwatch')" id="stopwatchBtn" class="flex-1 py-2 px-4 rounded-lg text-gray-600">
+                        스톱워치
+                    </button>
+                </div>
+                
+                <!-- Character -->
+                <div class="character mb-6 text-center">
+                    <div class="text-6xl">🥚</div>
+                </div>
+                
+                <!-- Pomodoro Mode -->
+                <div id="pomodoroMode" class="text-center">
+                    <!-- Time Setting -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium mb-2" id="timeSettingLabel">집중 시간 설정</label>
+                        <div class="flex items-center justify-center space-x-4">
+                            <button onclick="adjustTime(-5)" class="bg-gray-200 w-10 h-10 rounded-full">-</button>
+                            <span class="text-2xl font-bold" id="timeDisplay">25분</span>
+                            <button onclick="adjustTime(5)" class="bg-gray-200 w-10 h-10 rounded-full">+</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Timer Circle -->
+                    <div class="timer-circle mb-8" id="timerCircle">
+                        <div class="timer-inner">
+                            <div class="text-3xl font-bold" id="timerDisplay">25:00</div>
+                            <div class="text-sm text-gray-500" id="currentSubject">수학</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Timer Controls -->
+                    <div class="space-y-4">
+                        <button onclick="toggleTimer()" id="timerButton" class="w-full bg-blue-500 text-white py-4 rounded-xl text-lg font-semibold">
+                            시작하기
+                        </button>
+                        <button onclick="stopTimer()" class="w-full bg-red-500 text-white py-3 rounded-xl">
+                            기록 중단
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Stopwatch Mode -->
+                <div id="stopwatchMode" class="text-center" style="display: none;">
+                    <!-- Stopwatch Display -->
+                    <div class="mb-8">
+                        <div class="text-6xl font-bold mb-2" id="stopwatchDisplay">00:00:00</div>
+                        <div class="text-sm text-gray-500" id="stopwatchSubject">수학</div>
+                    </div>
+                    
+                    <!-- Stopwatch Controls -->
+                    <div class="space-y-4">
+                        <button onclick="toggleStopwatch()" id="stopwatchButton" class="w-full bg-green-500 text-white py-4 rounded-xl text-lg font-semibold">
+                            시작하기
+                        </button>
+                        <button onclick="stopStopwatch()" class="w-full bg-red-500 text-white py-3 rounded-xl">
+                            기록 저장
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timetable Page -->
+        <div class="page" id="timetablePage">
+            <div class="gradient-header text-white p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <button onclick="showPage('mainPage')" class="mr-3 text-xl">←</button>
+                        <h1 class="text-xl font-bold">시간표</h1>
+                    </div>
+                    <button onclick="addSubject()" class="text-xl">+</button>
+                </div>
+            </div>
+            
+            <div class="p-4">
+                <!-- Timetable Grid -->
+                <div class="bg-white rounded-xl overflow-hidden">
+                    <div class="grid grid-cols-6 text-xs">
+                        <div class="p-2 bg-gray-100 text-center font-semibold">시간</div>
+                        <div class="p-2 bg-gray-100 text-center font-semibold">월</div>
+                        <div class="p-2 bg-gray-100 text-center font-semibold">화</div>
+                        <div class="p-2 bg-gray-100 text-center font-semibold">수</div>
+                        <div class="p-2 bg-gray-100 text-center font-semibold">목</div>
+                        <div class="p-2 bg-gray-100 text-center font-semibold">금</div>
+                        
+                        <!-- 9시 -->
+                        <div class="timetable-cell p-2 bg-gray-50 text-center text-xs">9:00</div>
+                        <div class="timetable-cell subject-color-1 text-white p-2">
+                            <div class="text-xs font-semibold">수학</div>
+                            <div class="text-xs opacity-80">김선생</div>
+                        </div>
+                        <div class="timetable-cell"></div>
+                        <div class="timetable-cell subject-color-2 text-white p-2">
+                            <div class="text-xs font-semibold">영어</div>
+                            <div class="text-xs opacity-80">박선생</div>
+                        </div>
+                        <div class="timetable-cell"></div>
+                        <div class="timetable-cell subject-color-3 text-white p-2">
+                            <div class="text-xs font-semibold">국어</div>
+                            <div class="text-xs opacity-80">이선생</div>
+                        </div>
+                        
+                        <!-- 10시 -->
+                        <div class="timetable-cell p-2 bg-gray-50 text-center text-xs">10:00</div>
+                        <div class="timetable-cell"></div>
+                        <div class="timetable-cell subject-color-4 text-white p-2">
+                            <div class="text-xs font-semibold">과학</div>
+                            <div class="text-xs opacity-80">최선생</div>
+                        </div>
+                        <div class="timetable-cell"></div>
+                        <div class="timetable-cell subject-color-1 text-white p-2">
+                            <div class="text-xs font-semibold">수학</div>
+                            <div class="text-xs opacity-80">김선생</div>
+                        </div>
+                        <div class="timetable-cell"></div>
+                        
+                        <!-- 11시 -->
+                        <div class="timetable-cell p-2 bg-gray-50 text-center text-xs">11:00</div>
+                        <div class="timetable-cell subject-color-2 text-white p-2">
+                            <div class="text-xs font-semibold">영어</div>
+                            <div class="text-xs opacity-80">박선생</div>
+                        </div>
+                        <div class="timetable-cell"></div>
+                        <div class="timetable-cell subject-color-5 text-white p-2">
+                            <div class="text-xs font-semibold">사회</div>
+                            <div class="text-xs opacity-80">정선생</div>
+                        </div>
+                        <div class="timetable-cell"></div>
+                        <div class="timetable-cell subject-color-2 text-white p-2">
+                            <div class="text-xs font-semibold">영어</div>
+                            <div class="text-xs opacity-80">박선생</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Subject List -->
+                <div class="mt-6">
+                    <h3 class="font-semibold mb-3">등록된 과목</h3>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between p-3 bg-white rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 subject-color-1 rounded mr-3"></div>
+                                <div>
+                                    <div class="font-medium text-sm">수학</div>
+                                    <div class="text-xs text-gray-500">김선생</div>
+                                </div>
+                            </div>
+                            <button class="text-red-500 text-sm">삭제</button>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-white rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 subject-color-2 rounded mr-3"></div>
+                                <div>
+                                    <div class="font-medium text-sm">영어</div>
+                                    <div class="text-xs text-gray-500">박선생</div>
+                                </div>
+                            </div>
+                            <button class="text-red-500 text-sm">삭제</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Tutor Page -->
+        <div class="page" id="tutorPage">
+            <div class="gradient-header text-white p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <button onclick="showPage('mainPage')" class="mr-3 text-xl">←</button>
+                        <h1 class="text-xl font-bold">AI 튜터</h1>
+                    </div>
+                    <button onclick="showPage('reviewPage')" class="text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">
+                        복습하기
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-4 pb-24">
+                <!-- Learning Analysis -->
+                <div class="bg-white rounded-xl p-4 mb-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold" id="analysisTitle">📊 학습 분석</h3>
+                        <button onclick="showDetailedAnalysis()" class="text-blue-500 text-sm" id="detailBtn">자세히 보기</button>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span id="weakSubjectLabel">가장 어려워하는 과목</span>
+                            <span class="text-red-500 font-semibold">수학 (이차함수)</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span id="frequentQuestionLabel">질문이 많은 개념</span>
+                            <span class="text-orange-500 font-semibold">영어 문법</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span id="recommendedSubjectLabel">추천 학습 과목</span>
+                            <span class="text-blue-500 font-semibold">영어 현재완료</span>
+                        </div>
+                    </div>
+                    <div class="mt-3 p-3 bg-blue-50 rounded-lg text-sm">
+                        <p class="text-blue-700" id="studyAdvice">💡 영어의 현재완료 문법에 대한 질문이 많으니 현재완료 문법을 더 공부하세요</p>
+                    </div>
+                </div>
+                
+                <!-- Chat Interface -->
+                <div class="bg-white rounded-xl p-4 mb-4">
+                    <div id="chatContainer" class="h-64 overflow-y-auto mb-4 space-y-3">
+                        <div class="chat-bubble">
+                            <div class="flex items-start space-x-2">
+                                <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">AI</div>
+                                <div class="bg-gray-100 rounded-lg p-3 max-w-xs">
+                                    <p class="text-sm">안녕하세요! 포켓쌤 AI입니다. 어떤 공부를 도와드릴까요? 🤖</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <input type="text" id="chatInput" placeholder="질문을 입력하세요..." 
+                               class="flex-1 px-3 py-2 border rounded-lg text-sm"
+                               onkeypress="handleChatEnter(event)">
+                        <button onclick="sendChatMessage()" class="bg-purple-500 text-white px-4 py-2 rounded-lg text-sm">
+                            전송
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Previous Questions -->
+                <div class="bg-white rounded-xl p-4">
+                    <h3 class="font-semibold mb-3" id="previousQuestionsTitle">지난 질문</h3>
+                    <div class="space-y-2 max-h-40 overflow-y-auto" id="previousQuestionsList">
+                        <div class="p-2 bg-gray-50 rounded-lg text-sm cursor-pointer" onclick="repeatQuestion('수학 이차함수의 꼭짓점 구하는 방법')">
+                            <div class="font-medium text-gray-700">수학 이차함수의 꼭짓점 구하는 방법</div>
+                            <div class="text-xs text-gray-500">2시간 전</div>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded-lg text-sm cursor-pointer" onclick="repeatQuestion('영어 현재완료와 과거완료 차이점')">
+                            <div class="font-medium text-gray-700">영어 현재완료와 과거완료 차이점</div>
+                            <div class="text-xs text-gray-500">어제</div>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded-lg text-sm cursor-pointer" onclick="repeatQuestion('국어 독서 지문에서 주제 찾는 방법')">
+                            <div class="font-medium text-gray-700">국어 독서 지문에서 주제 찾는 방법</div>
+                            <div class="text-xs text-gray-500">3일 전</div>
+                        </div>
+                    </div>
+                    <button onclick="clearQuestionHistory()" class="w-full mt-3 text-gray-500 text-sm">
+                        질문 기록 지우기
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Review Page -->
+        <div class="page" id="reviewPage">
+            <div class="gradient-header text-white p-4">
+                <div class="flex items-center">
+                    <button onclick="showPage('tutorPage')" class="mr-3 text-xl">←</button>
+                    <h1 class="text-xl font-bold">복습 & 오답노트</h1>
+                </div>
+            </div>
+            
+            <div class="p-4">
+                <!-- Weak Areas -->
+                <div class="bg-white rounded-xl p-4 mb-4">
+                    <h3 class="font-semibold mb-3">🎯 집중 복습 영역</h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-red-50 rounded-lg">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <div class="font-medium text-sm">수학 - 이차함수</div>
+                                    <div class="text-xs text-gray-500">질문 8회 • 정답률 45%</div>
+                                </div>
+                                <button onclick="startReview('math')" class="bg-red-500 text-white px-3 py-1 rounded text-xs">
+                                    복습하기
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="p-3 bg-orange-50 rounded-lg">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <div class="font-medium text-sm">영어 - 현재완료</div>
+                                    <div class="text-xs text-gray-500">질문 5회 • 정답률 62%</div>
+                                </div>
+                                <button onclick="startReview('english')" class="bg-orange-500 text-white px-3 py-1 rounded text-xs">
+                                    복습하기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Review Quiz -->
+                <div class="bg-white rounded-xl p-4" id="reviewQuiz" style="display: none;">
+                    <h3 class="font-semibold mb-4">복습 퀴즈</h3>
+                    <div class="mb-4">
+                        <p class="text-sm mb-3" id="quizQuestion">다음 이차함수의 꼭짓점을 구하시오: y = x² - 4x + 3</p>
+                        <div class="space-y-2" id="quizOptions">
+                            <button class="w-full text-left p-2 border rounded-lg hover:bg-gray-50" onclick="selectAnswer(1)">
+                                ① (2, -1)
+                            </button>
+                            <button class="w-full text-left p-2 border rounded-lg hover:bg-gray-50" onclick="selectAnswer(2)">
+                                ② (2, 1)
+                            </button>
+                            <button class="w-full text-left p-2 border rounded-lg hover:bg-gray-50" onclick="selectAnswer(3)">
+                                ③ (-2, -1)
+                            </button>
+                            <button class="w-full text-left p-2 border rounded-lg hover:bg-gray-50" onclick="selectAnswer(4)">
+                                ④ (-2, 1)
+                            </button>
+                        </div>
+                    </div>
+                    <button onclick="submitAnswer()" class="w-full bg-blue-500 text-white py-2 rounded-lg">
+                        답안 제출
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="flex justify-around py-2">
+                <button onclick="showPage('mainPage')" class="flex flex-col items-center p-2 text-blue-500">
+                    <span class="text-xl">🏠</span>
+                    <span class="text-xs" id="navHome">홈</span>
+                </button>
+                <button onclick="showPage('partnerPage')" class="flex flex-col items-center p-2 text-gray-500">
+                    <span class="text-xl">🥚</span>
+                    <span class="text-xs" id="navPartner">파트너</span>
+                </button>
+                <button onclick="showPage('tutorPage')" class="flex flex-col items-center p-2 text-gray-500">
+                    <span class="text-xl">🤖</span>
+                    <span class="text-xs" id="navTutor">AI튜터</span>
+                </button>
+                <button onclick="showPage('timetablePage')" class="flex flex-col items-center p-2 text-gray-500">
+                    <span class="text-xl">📅</span>
+                    <span class="text-xs" id="navTimetable">시간표</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 'mainPage';
+        let timerInterval = null;
+        let stopwatchInterval = null;
+        let timerSeconds = 1500; // 25 minutes
+        let stopwatchSeconds = 0;
+        let isTimerRunning = false;
+        let isStopwatchRunning = false;
+        let currentSubject = '수학';
+        let selectedAnswer = null;
+        let currentTimerMode = 'pomodoro';
+        let pomodoroMinutes = 25;
+        let statsVisible = false;
+        
+        // Language data
+        const translations = {
+            ko: {
+                appName: '포켓쌤',
+                settings: '설정',
+                language: '언어 설정',
+                schoolInfo: '학교 정보',
+                schoolType: '학교 구분',
+                grade: '학년',
+                middle: '중학교',
+                high: '고등학교',
+                examType: '준비 시험',
+                goalSetting: '목표 설정',
+                currentGrades: '현재 성적',
+                myGoal: '나의 목표',
+                studyStreak: '연속 학습',
+                myPartner: '내 파트너',
+                todayGoals: '오늘의 목표',
+                studyTime: '오늘 공부 시간',
+                start: '시작',
+                concentration: '집중력',
+                memory: '기억력',
+                problemSolving: '문제해결력',
+                statsView: '스텟 보기',
+                statsHide: '스텟 숨기기',
+                timerTitle: '공부 타이머',
+                pomodoro: '뽀모도로',
+                stopwatch: '스톱워치',
+                timeSettingLabel: '집중 시간 설정',
+                navHome: '홈',
+                navPartner: '파트너',
+                navTutor: 'AI튜터',
+                navTimetable: '시간표',
+                analysisTitle: '📊 학습 분석',
+                detailBtn: '자세히 보기',
+                weakSubject: '가장 어려워하는 과목',
+                frequentQuestion: '질문이 많은 개념',
+                recommendedSubject: '추천 학습 과목',
+                studyAdvice: '💡 영어의 현재완료 문법에 대한 질문이 많으니 현재완료 문법을 더 공부하세요',
+                previousQuestions: '지난 질문',
+                goalText: '서울대학교 컴퓨터공학과 합격'
+            },
+            ja: {
+                appName: 'ポケット先生',
+                settings: '設定',
+                language: '言語設定',
+                schoolInfo: '学校情報',
+                schoolType: '学校区分',
+                grade: '学年',
+                middle: '中学校',
+                high: '高等学校',
+                examType: '準備試験',
+                goalSetting: '目標設定',
+                currentGrades: '現在の成績',
+                myGoal: '私の目標',
+                studyStreak: '連続学習',
+                myPartner: '私のパートナー',
+                todayGoals: '今日の目標',
+                studyTime: '今日の勉強時間',
+                start: 'スタート',
+                concentration: '集中力',
+                memory: '記憶力',
+                problemSolving: '問題解決力',
+                statsView: 'ステータス表示',
+                statsHide: 'ステータス非表示',
+                timerTitle: '勉強タイマー',
+                pomodoro: 'ポモドーロ',
+                stopwatch: 'ストップウォッチ',
+                timeSettingLabel: '集中時間設定',
+                navHome: 'ホーム',
+                navPartner: 'パートナー',
+                navTutor: 'AI講師',
+                navTimetable: '時間割',
+                analysisTitle: '📊 学習分析',
+                detailBtn: '詳細を見る',
+                weakSubject: '最も苦手な科目',
+                frequentQuestion: '質問の多い概念',
+                recommendedSubject: '推奨学習科目',
+                studyAdvice: '💡 英語の現在完了文法についての質問が多いので、現在完了文法をもっと勉強してください',
+                previousQuestions: '過去の質問',
+                goalText: '東京大学工学部合格'
+            }
+        };
+        
+        let currentLanguage = 'ko';
+        
+        // Stats Toggle Function
+        function toggleStats() {
+            const statsDiv = document.getElementById('partnerStats');
+            const toggleBtn = document.getElementById('statsToggle');
+            const t = translations[currentLanguage];
+            
+            if (statsVisible) {
+                statsDiv.style.display = 'none';
+                toggleBtn.textContent = t.statsView + ' ▼';
+                statsVisible = false;
+            } else {
+                statsDiv.style.display = 'block';
+                toggleBtn.textContent = t.statsHide + ' ▲';
+                statsVisible = true;
+            }
+        }
+        
+        // Language Change Function
+        function changeLanguage(lang) {
+            currentLanguage = lang;
+            updateLanguage();
+        }
+        
+        // Timer Mode Switch
+        function switchTimerMode(mode) {
+            currentTimerMode = mode;
+            
+            if (mode === 'pomodoro') {
+                document.getElementById('pomodoroMode').style.display = 'block';
+                document.getElementById('stopwatchMode').style.display = 'none';
+                document.getElementById('pomodoroBtn').classList.add('bg-blue-500', 'text-white');
+                document.getElementById('pomodoroBtn').classList.remove('text-gray-600');
+                document.getElementById('stopwatchBtn').classList.remove('bg-blue-500', 'text-white');
+                document.getElementById('stopwatchBtn').classList.add('text-gray-600');
+            } else {
+                document.getElementById('pomodoroMode').style.display = 'none';
+                document.getElementById('stopwatchMode').style.display = 'block';
+                document.getElementById('stopwatchBtn').classList.add('bg-blue-500', 'text-white');
+                document.getElementById('stopwatchBtn').classList.remove('text-gray-600');
+                document.getElementById('pomodoroBtn').classList.remove('bg-blue-500', 'text-white');
+                document.getElementById('pomodoroBtn').classList.add('text-gray-600');
+            }
+        }
+        
+        // Adjust Pomodoro Time
+        function adjustTime(minutes) {
+            pomodoroMinutes = Math.max(5, Math.min(60, pomodoroMinutes + minutes));
+            timerSeconds = pomodoroMinutes * 60;
+            document.getElementById('timeDisplay').textContent = pomodoroMinutes + '분';
+            updateTimerDisplay();
+            updateTimerCircle();
+        }
+        
+        // Stopwatch Functions
+        function toggleStopwatch() {
+            if (isStopwatchRunning) {
+                pauseStopwatch();
+            } else {
+                startStopwatch();
+            }
+        }
+        
+        function startStopwatch() {
+            isStopwatchRunning = true;
+            document.getElementById('stopwatchButton').textContent = '일시정지';
+            
+            stopwatchInterval = setInterval(() => {
+                stopwatchSeconds++;
+                updateStopwatchDisplay();
+            }, 1000);
+        }
+        
+        function pauseStopwatch() {
+            isStopwatchRunning = false;
+            clearInterval(stopwatchInterval);
+            document.getElementById('stopwatchButton').textContent = '계속하기';
+        }
+        
+        function stopStopwatch() {
+            isStopwatchRunning = false;
+            clearInterval(stopwatchInterval);
+            
+            const hours = Math.floor(stopwatchSeconds / 3600);
+            const minutes = Math.floor((stopwatchSeconds % 3600) / 60);
+            
+            if (stopwatchSeconds > 0) {
+                alert(`${currentSubject} ${hours > 0 ? hours + '시간 ' : ''}${minutes}분이 기록되었습니다!`);
+            }
+            
+            stopwatchSeconds = 0;
+            updateStopwatchDisplay();
+            document.getElementById('stopwatchButton').textContent = '시작하기';
+            showPage('mainPage');
+        }
+        
+        function updateStopwatchDisplay() {
+            const hours = Math.floor(stopwatchSeconds / 3600);
+            const minutes = Math.floor((stopwatchSeconds % 3600) / 60);
+            const seconds = stopwatchSeconds % 60;
+            
+            document.getElementById('stopwatchDisplay').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        // Detailed Analysis
+        function showDetailedAnalysis() {
+            alert('📊 상세 분석\n\n수학 이차함수: 8회 질문, 정답률 45%\n영어 현재완료: 5회 질문, 정답률 62%\n국어 독서: 3회 질문, 정답률 78%\n\n추천: 수학 이차함수 개념 복습 필요');
+        }
+        
+        // Previous Questions
+        function repeatQuestion(question) {
+            document.getElementById('chatInput').value = question;
+            sendChatMessage();
+        }
+        
+        function clearQuestionHistory() {
+            if (confirm('질문 기록을 모두 삭제하시겠습니까?')) {
+                document.getElementById('previousQuestionsList').innerHTML = '<p class="text-gray-500 text-center py-4">질문 기록이 없습니다.</p>';
+            }
+        }
+
+        // Page Navigation
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+            currentPage = pageId;
+            
+            // Update bottom nav
+            document.querySelectorAll('.bottom-nav button').forEach(btn => {
+                btn.classList.remove('text-blue-500');
+                btn.classList.add('text-gray-500');
+            });
+            
+            if (pageId === 'mainPage') {
+                document.querySelector('.bottom-nav button:nth-child(1)').classList.add('text-blue-500');
+                document.querySelector('.bottom-nav button:nth-child(1)').classList.remove('text-gray-500');
+            } else if (pageId === 'partnerPage') {
+                document.querySelector('.bottom-nav button:nth-child(2)').classList.add('text-blue-500');
+                document.querySelector('.bottom-nav button:nth-child(2)').classList.remove('text-gray-500');
+            } else if (pageId === 'tutorPage') {
+                document.querySelector('.bottom-nav button:nth-child(3)').classList.add('text-blue-500');
+                document.querySelector('.bottom-nav button:nth-child(3)').classList.remove('text-gray-500');
+            } else if (pageId === 'timetablePage') {
+                document.querySelector('.bottom-nav button:nth-child(4)').classList.add('text-blue-500');
+                document.querySelector('.bottom-nav button:nth-child(4)').classList.remove('text-gray-500');
+            }
+        }
+        
+        // Menu Functions
+        function openMenu() {
+            document.getElementById('menuOverlay').style.display = 'block';
+            document.getElementById('menuPanel').classList.add('open');
+        }
+        
+        function closeMenu() {
+            document.getElementById('menuOverlay').style.display = 'none';
+            document.getElementById('menuPanel').classList.remove('open');
+        }
+        
+        // Timer Functions
+        function startTimer(subject) {
+            currentSubject = subject;
+            document.getElementById('currentSubject').textContent = subject;
+            showPage('timerPage');
+        }
+        
+        function toggleTimer() {
+            if (isTimerRunning) {
+                pauseTimer();
+            } else {
+                startTimerCountdown();
+            }
+        }
+        
+        function startTimerCountdown() {
+            isTimerRunning = true;
+            document.getElementById('timerButton').textContent = '일시정지';
+            
+            timerInterval = setInterval(() => {
+                timerSeconds--;
+                updateTimerDisplay();
+                updateTimerCircle();
+                
+                if (timerSeconds <= 0) {
+                    completeTimer();
+                }
+            }, 1000);
+        }
+        
+        function pauseTimer() {
+            isTimerRunning = false;
+            clearInterval(timerInterval);
+            document.getElementById('timerButton').textContent = '계속하기';
+        }
+        
+        function stopTimer() {
+            isTimerRunning = false;
+            clearInterval(timerInterval);
+            
+            // Record study time
+            const studiedMinutes = Math.floor((1500 - timerSeconds) / 60);
+            if (studiedMinutes > 0) {
+                alert(`${currentSubject} ${studiedMinutes}분이 기록되었습니다!`);
+                updateStats(studiedMinutes);
+            }
+            
+            // Reset timer
+            timerSeconds = 1500;
+            updateTimerDisplay();
+            updateTimerCircle();
+            document.getElementById('timerButton').textContent = '시작하기';
+            
+            showPage('mainPage');
+        }
+        
+        function completeTimer() {
+            isTimerRunning = false;
+            clearInterval(timerInterval);
+            alert('🎉 25분 공부 완료! 잘했어요!');
+            updateStats(25);
+            
+            // Reset timer
+            timerSeconds = 1500;
+            updateTimerDisplay();
+            updateTimerCircle();
+            document.getElementById('timerButton').textContent = '시작하기';
+        }
+        
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timerSeconds / 60);
+            const seconds = timerSeconds % 60;
+            document.getElementById('timerDisplay').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        function updateTimerCircle() {
+            const progress = ((1500 - timerSeconds) / 1500) * 360;
+            document.getElementById('timerCircle').style.background = 
+                `conic-gradient(#667eea ${progress}deg, #e0e0e0 ${progress}deg)`;
+        }
+        
+        function updateStats(minutes) {
+            // Update character stats based on study time
+            const concentrationGain = Math.floor(minutes / 5);
+            // This would update the actual stats in a real app
+            console.log(`Concentration increased by ${concentrationGain}`);
+        }
+        
+        // Chat Functions
+        function handleChatEnter(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
+        }
+        
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            addChatMessage(message, 'user');
+            input.value = '';
+            
+            // Simulate AI response
+            setTimeout(() => {
+                generateAIResponse(message);
+            }, 1000);
+        }
+        
+        function quickQuestion(question) {
+            document.getElementById('chatInput').value = question;
+            sendChatMessage();
+        }
+        
+        function addChatMessage(message, sender) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-bubble';
+            
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="flex items-start space-x-2 justify-end">
+                        <div class="bg-blue-500 text-white rounded-lg p-3 max-w-xs">
+                            <p class="text-sm">${message}</p>
+                        </div>
+                        <div class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white text-sm font-bold">나</div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="flex items-start space-x-2">
+                        <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">AI</div>
+                        <div class="bg-gray-100 rounded-lg p-3 max-w-xs">
+                            <p class="text-sm">${message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function generateAIResponse(userMessage) {
+            let response = '';
+            
+            if (userMessage.includes('수학') || userMessage.includes('이차함수')) {
+                response = '수학 이차함수에 대해 설명드릴게요! 이차함수는 y = ax² + bx + c 형태로, a값에 따라 포물선의 모양이 결정됩니다. 꼭짓점 공식은 x = -b/2a 입니다. 더 자세한 설명이 필요하시면 말씀해주세요! 📊';
+            } else if (userMessage.includes('영어') || userMessage.includes('문법')) {
+                response = '영어 문법 도움드릴게요! 현재완료는 have/has + 과거분사 형태로, 과거에 시작되어 현재까지 영향을 미치는 상황을 표현합니다. 예: "I have studied English for 3 years." 어떤 부분이 더 궁금하신가요? 📚';
+            } else if (userMessage.includes('국어') || userMessage.includes('독서')) {
+                response = '국어 독서 지문 풀이법을 알려드릴게요! 1) 지문을 빠르게 훑어보며 주제 파악 2) 문제를 먼저 읽고 핵심 키워드 확인 3) 지문에서 근거 찾기 4) 선택지 비교 분석. 차근차근 연습해보세요! 📖';
+            } else if (userMessage.includes('과학') || userMessage.includes('화학')) {
+                response = '과학 화학 반응식 도움드릴게요! 화학 반응식을 쓸 때는 1) 반응물과 생성물 확인 2) 원자 개수 맞추기 3) 계수 조정하기 순서로 진행하면 됩니다. 구체적인 반응식이 있다면 함께 풀어볼까요? 🧪';
+            } else {
+                response = '좋은 질문이네요! 구체적으로 어떤 부분이 궁금하신지 알려주시면 더 자세히 도와드릴 수 있어요. 수학, 영어, 국어, 과학 등 어떤 과목이든 언제든 물어보세요! 💪';
+            }
+            
+            addChatMessage(response, 'ai');
+        }
+        
+        // Review Functions
+        function startReview(subject) {
+            document.getElementById('reviewQuiz').style.display = 'block';
+            
+            if (subject === 'math') {
+                document.getElementById('quizQuestion').textContent = '다음 이차함수의 꼭짓점을 구하시오: y = x² - 4x + 3';
+            } else if (subject === 'english') {
+                document.getElementById('quizQuestion').textContent = '다음 중 현재완료 시제가 올바르게 사용된 문장은?';
+                document.getElementById('quizOptions').innerHTML = `
+                    <button class="w-full text-left p-2 border rounded-lg hover:bg-gray-50" onclick="selectAnswer(1)">
+                        ① I have went to school yesterday.
+                    </button>
+                    <button class="w-full text-left p-2 border rounded-lg hover:bg-gray-50" onclick="selectAnswer(2)">
+                        ② I have been to Paris twice.
+                    </button>
+                    <button class="w-full text-left p-2 border rounded-lg hover:bg-gray-50" onclick="selectAnswer(3)">
+                        ③ I have go to the store.
+                    </button>
+                    <button class="w-full text-left p-2 border rounded-lg hover:bg-gray-50" onclick="selectAnswer(4)">
+                        ④ I have going there.
+                    </button>
+                `;
+            }
+        }
+        
+        function selectAnswer(answerNum) {
+            selectedAnswer = answerNum;
+            
+            // Visual feedback
+            document.querySelectorAll('#quizOptions button').forEach((btn, index) => {
+                btn.classList.remove('bg-blue-100', 'border-blue-500');
+                if (index + 1 === answerNum) {
+                    btn.classList.add('bg-blue-100', 'border-blue-500');
+                }
+            });
+        }
+        
+        function submitAnswer() {
+            if (!selectedAnswer) {
+                alert('답을 선택해주세요!');
+                return;
+            }
+            
+            // Check answer (simplified)
+            const correctAnswer = 1; // For math question: (2, -1)
+            
+            if (selectedAnswer === correctAnswer) {
+                alert('🎉 정답입니다! 잘했어요!');
+                // Update memory stat
+            } else {
+                alert('❌ 틀렸습니다. 다시 한번 생각해보세요!');
+            }
+            
+            // Reset quiz
+            document.getElementById('reviewQuiz').style.display = 'none';
+            selectedAnswer = null;
+        }
+        
+        // Timetable Functions
+        function addSubject() {
+            const subjectName = prompt('과목명을 입력하세요:');
+            const teacherName = prompt('선생님 성함을 입력하세요:');
+            
+            if (subjectName && teacherName) {
+                alert(`${subjectName} (${teacherName}) 과목이 추가되었습니다!`);
+                // In a real app, this would update the timetable
+            }
+        }
+        
+        function updateLanguage() {
+            const t = translations[currentLanguage];
+            
+            // Update main elements
+            document.querySelector('.gradient-header h1').textContent = t.appName;
+            document.getElementById('settingLanguage').textContent = t.language;
+            document.getElementById('settingSchool').textContent = t.schoolInfo;
+            document.getElementById('schoolTypeLabel').textContent = t.schoolType;
+            document.getElementById('gradeLabel').textContent = t.grade;
+            
+            // Update school type options
+            const schoolTypeSelect = document.getElementById('schoolType');
+            schoolTypeSelect.options[0].textContent = t.middle;
+            schoolTypeSelect.options[1].textContent = t.high;
+            
+            // Update grade options
+            const gradeSelect = document.getElementById('grade');
+            for (let i = 0; i < gradeSelect.options.length; i++) {
+                gradeSelect.options[i].textContent = (i + 1) + (currentLanguage === 'ja' ? '年生' : '학년');
+            }
+            
+            // Update stats labels
+            document.getElementById('statConcentration').textContent = t.concentration;
+            document.getElementById('statMemory').textContent = t.memory;
+            document.getElementById('statProblemSolving').textContent = t.problemSolving;
+            
+            // Update stats toggle button
+            const statsToggle = document.getElementById('statsToggle');
+            if (statsVisible) {
+                statsToggle.textContent = t.statsHide + ' ▲';
+            } else {
+                statsToggle.textContent = t.statsView + ' ▼';
+            }
+            
+            // Update timer page
+            document.getElementById('timerPageTitle').textContent = t.timerTitle;
+            document.getElementById('pomodoroBtn').textContent = t.pomodoro;
+            document.getElementById('stopwatchBtn').textContent = t.stopwatch;
+            document.getElementById('timeSettingLabel').textContent = t.timeSettingLabel;
+            
+            // Update navigation
+            document.getElementById('navHome').textContent = t.navHome;
+            document.getElementById('navPartner').textContent = t.navPartner;
+            document.getElementById('navTutor').textContent = t.navTutor;
+            document.getElementById('navTimetable').textContent = t.navTimetable;
+            
+            // Update AI tutor page
+            document.getElementById('analysisTitle').textContent = t.analysisTitle;
+            document.getElementById('detailBtn').textContent = t.detailBtn;
+            document.getElementById('weakSubjectLabel').textContent = t.weakSubject;
+            document.getElementById('frequentQuestionLabel').textContent = t.frequentQuestion;
+            document.getElementById('recommendedSubjectLabel').textContent = t.recommendedSubject;
+            document.getElementById('studyAdvice').textContent = t.studyAdvice;
+            document.getElementById('previousQuestionsTitle').textContent = t.previousQuestions;
+            
+            // Update goal text
+            const goalElements = document.querySelectorAll('.text-gray-600');
+            goalElements.forEach(el => {
+                if (el.textContent.includes('서울대학교') || el.textContent.includes('東京大学')) {
+                    el.textContent = t.goalText;
+                }
+            });
+            
+            // Update exam type options for Japanese
+            if (currentLanguage === 'ja') {
+                const examSelect = document.querySelector('select');
+                if (examSelect && examSelect.options[0].textContent === '수능') {
+                    examSelect.options[0].textContent = '大学入学共通テスト';
+                    examSelect.options[1].textContent = 'TOEIC';
+                    examSelect.options[2].textContent = 'TOEFL';
+                    examSelect.options[3].textContent = 'JLPT';
+                    examSelect.options[4].textContent = 'その他';
+                }
+            } else {
+                const examSelect = document.querySelector('select');
+                if (examSelect && examSelect.options[0].textContent === '大学入学共通テスト') {
+                    examSelect.options[0].textContent = '수능';
+                    examSelect.options[1].textContent = '토익';
+                    examSelect.options[2].textContent = '토플';
+                    examSelect.options[3].textContent = 'JLPT';
+                    examSelect.options[4].textContent = '기타';
+                }
+            }
+        }
+        
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTimerDisplay();
+            updateTimerCircle();
+            
+            // Add goal checkbox functionality
+            document.addEventListener('change', function(e) {
+                if (e.target.type === 'checkbox') {
+                    const label = e.target.nextElementSibling;
+                    if (e.target.checked) {
+                        label.classList.add('line-through', 'text-gray-500');
+                    } else {
+                        label.classList.remove('line-through', 'text-gray-500');
+                    }
+                }
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9699f036c3bc329c',t:'MTc1NDI2NzM0NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
